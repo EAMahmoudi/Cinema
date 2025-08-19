@@ -2,14 +2,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-
-SOURCE_CHOICES = \
-    [
-        ("admin", "Créé via Admin"),
-        ("tmdb", "Importé depuis TMDb")
-    ]
-
-
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
         ('auteur', 'Auteur'),
