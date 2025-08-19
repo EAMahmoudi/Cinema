@@ -16,7 +16,7 @@ class AuteurProfile(models.Model):
     source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default="admin")
 
     def __str__(self):
-        return f"{self.nom}"
+        return self.nom
 
 class Film(models.Model):
     titre = models.CharField(max_length=255)
@@ -37,3 +37,13 @@ class Film(models.Model):
     def __str__(self):
         return self.titre
 
+class SpectateurProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="spectateur_profile")
+    bio = models.TextField(blank=True, null=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+
+    favoris_films = models.ManyToManyField(Film, related_name="favoris_spectateurs", blank=True)
+    favoris_auteurs = models.ManyToManyField(AuteurProfile, related_name="favoris_spectateurs", blank=True)
+
+    def __str__(self):
+        return self.user.username
