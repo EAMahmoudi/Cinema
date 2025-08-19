@@ -9,7 +9,7 @@ SOURCE_CHOICES = \
     ]
 
 class AuteurProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="auteur_profile")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="auteur_profile", null=True, blank=True)
     nom = models.CharField(max_length=10, null=True, blank=True)
     email = models.CharField(max_length=100, null=True, blank=True)
     date_naissance = models.DateField(blank=True, null=True)
