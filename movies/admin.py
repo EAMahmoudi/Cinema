@@ -3,19 +3,35 @@ from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 
 from .models import (
-     AuteurProfile
+     AuteurProfile,Film,NotationAuteur
 )
 
+class HasFilmsFilter(admin.SimpleListFilter):
+    title = _("a au moins un film")
+    parameter_name = "has_films"
+
+    def lookups(self, request, model_admin):
+        return (('yes', _("Oui")), ('no', _("Non")))
+
+    def queryset(self, request, queryset):
+        qs = queryset.annotate(film_count=Count('films'))
+        if self.value() == 'yes':
+            return qs.filter(film_count__gt=0)
+        if self.value() == 'no':
+            return qs.filter(film_count=0)
+        return queryset
 
 # Register your models here.
+
 @admin.register(AuteurProfile)
 class AuteurProfileAdmin(admin.ModelAdmin):
     list_display = ('display_name', 'date_naissance', 'source', 'films_count')
-    list_filter = ('source',)
+    list_filter = ('source', HasFilmsFilter)
     search_fields = (
         'user__username', 'user__first_name', 'user__last_name', 'user__email',
         'nom','email'
     )
+
     autocomplete_fields = ['user']
 
     def get_queryset(self, request):
