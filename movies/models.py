@@ -1,6 +1,7 @@
 
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 SOURCE_CHOICES = \
     [
@@ -47,3 +48,24 @@ class SpectateurProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+class NotationFilm(models.Model):
+    spectateur = models.ForeignKey(SpectateurProfile, on_delete=models.CASCADE, related_name="notations_films")
+    film = models.ForeignKey(Film, on_delete=models.CASCADE, related_name="notations")
+    note = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)]
+)
+    commentaire = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ("spectateur", "film")
+
+
+class NotationAuteur(models.Model):
+    spectateur = models.ForeignKey(SpectateurProfile, on_delete=models.CASCADE, related_name="notations_auteurs")
+    auteur = models.ForeignKey(AuteurProfile, on_delete=models.CASCADE, related_name="notations")
+    note = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)]
+)
+    commentaire = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ("spectateur", "auteur")
