@@ -18,3 +18,22 @@ class AuteurProfile(models.Model):
     def __str__(self):
         return f"{self.nom}"
 
+class Film(models.Model):
+    titre = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    date_sortie = models.DateField()
+
+
+    auteurs = models.ManyToManyField(AuteurProfile, related_name="films")
+
+    EVALUATION_CHOICES = [("excellent","Excellent"), ("bon","Bon"), ("moyen","Moyen"), ("mauvais","Mauvais")]
+    evaluation = models.CharField(max_length=20, choices=EVALUATION_CHOICES, blank=True, null=True)
+
+    STATUT_CHOICES = [("production","En production"), ("salle","En salle"), ("sorti","Sorti")]
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default="production")
+
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default="admin")
+
+    def __str__(self):
+        return self.titre
+
