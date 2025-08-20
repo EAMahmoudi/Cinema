@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path , include
 from core.views import ping
 from rest_framework.routers import DefaultRouter
-from movies.views import AuteurViewSet
+from movies.views import AuteurViewSet,FilmViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView, TokenRefreshView, TokenVerifyView, TokenBlacklistView
 )
@@ -27,6 +27,7 @@ app_name = "users_api"  # ⬅️ namespace (pratique pour reverse)
 
 router = DefaultRouter()
 router.register(r"auteurs", AuteurViewSet, basename="auteur")
+router.register(r"films", FilmViewSet, basename="film")
 
 urlpatterns = [
     path('admin/', admin.site.urls),

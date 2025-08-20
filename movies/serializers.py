@@ -32,3 +32,23 @@ class AuteurModifSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuteurProfile
         fields = ("id", "nom",'email', "date_naissance", "source")
+
+
+
+class FilmListSerializer(serializers.ModelSerializer):
+
+
+    class Meta:
+        model = Film
+        fields = ("id", "titre", "description", "evaluation","statut")
+
+class FilmDetailSerializer(serializers.ModelSerializer):
+    auteurs = AuteurListSerializer(many=True, read_only=True)
+    class Meta:
+        model = Film
+        fields = ("id", "titre", "description", "evaluation","statut",'auteurs')
+
+class FilmModifSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Film
+        fields = ("id", "titre", "description", "evaluation","statut",'auteurs')
