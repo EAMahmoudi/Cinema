@@ -17,9 +17,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path , include
 from core.views import ping
+from rest_framework.routers import DefaultRouter
+from movies.views import AuteurViewSet
+
+app_name = "users_api"  # ⬅️ namespace (pratique pour reverse)
+
+router = DefaultRouter()
+router.register(r"auteurs", AuteurViewSet, basename="auteur")
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
-    path('ping/', ping),  # <-- endpoint de test
+    path('ping/', ping),
+    path("", include(router.urls)),
 
 ]
