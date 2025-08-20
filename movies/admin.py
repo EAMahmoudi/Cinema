@@ -84,6 +84,12 @@ class NotationAuteurInline(admin.TabularInline):
     autocomplete_fields = ['spectateur', 'auteur']
     show_change_link = True
 
+class NotationFilmInline(admin.TabularInline):
+    model = NotationFilm
+    extra = 0
+    fields = ('spectateur', 'film', 'note', 'commentaire')
+    autocomplete_fields = ['spectateur', 'film']
+    show_change_link = True
 
 
 @admin.register(AuteurProfile)
@@ -146,6 +152,7 @@ class FilmAdmin(admin.ModelAdmin):
     search_fields = ('titre', 'description', 'auteurs__user__username', 'auteurs__user__first_name', 'auteurs__user__last_name')
     # Edition des auteurs directement dans la fiche du film
     filter_horizontal = ('auteurs',)
+    inlines = [NotationFilmInline]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
