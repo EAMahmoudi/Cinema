@@ -71,6 +71,21 @@ class EvaluationFilter(admin.SimpleListFilter):
             return qs.filter(_avg__lt=2.5)
         return qs
 
+class FilmAuteurInline(admin.TabularInline):
+    model = Film.auteurs.through
+    fk_name = 'auteurprofile'
+    extra = 0
+    autocomplete_fields = ['film']
+
+class NotationAuteurInline(admin.TabularInline):
+    model = NotationAuteur
+    extra = 0
+    fields = ('spectateur', 'auteur', 'note', 'commentaire')
+    autocomplete_fields = ['spectateur', 'auteur']
+    show_change_link = True
+
+
+
 @admin.register(AuteurProfile)
 class AuteurProfileAdmin(admin.ModelAdmin):
     list_display = ('display_name', 'date_naissance', 'source', 'films_count')
@@ -81,6 +96,7 @@ class AuteurProfileAdmin(admin.ModelAdmin):
     )
 
     autocomplete_fields = ['user']
+    inlines = [FilmAuteurInline, NotationAuteurInline]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
