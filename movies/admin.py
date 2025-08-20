@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.functions import ExtractYear
 
 from .models import (
-     AuteurProfile,Film,
+     AuteurProfile,Film,SpectateurProfile
 )
 
 class AvoirFilmsFilter(admin.SimpleListFilter):
@@ -150,4 +150,27 @@ class FilmAdmin(admin.ModelAdmin):
                 names.append("(import TMDb)")
         return ", ".join(names) if names else "-"
 
+
+@admin.register(SpectateurProfile)
+class SpectateurProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'favoris_films_count', 'favoris_auteurs_count')
+    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name',
+                     'favoris_films__titre', 'favoris_auteurs__user__username')
+
+    autocomplete_fields = ['user']
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            _fav_films=Count('favoris_films', distinct=True),
+            _fav_auteurs=Count('favoris_auteurs', distinct=True),
+        )
+
+    @admin.display(ordering='_fav_films', description="Films favoris")
+    def favoris_films_count(self, obj):
+        return obj._fav_films
+
+    @admin.display(ordering='_fav_auteurs', description="Auteurs favoris")
+    def favoris_auteurs_count(self, obj):
+        return obj._fav_auteurs
 
