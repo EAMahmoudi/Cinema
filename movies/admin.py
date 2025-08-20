@@ -1,12 +1,13 @@
 from django.contrib import admin, messages
-from django.db.models import Count
+from django.db.models import Count,Avg
 from django.utils.translation import gettext_lazy as _
+from django.db.models.functions import ExtractYear
 
 from .models import (
-     AuteurProfile,Film,NotationAuteur
+     AuteurProfile,Film,
 )
 
-class HasFilmsFilter(admin.SimpleListFilter):
+class AvoirFilmsFilter(admin.SimpleListFilter):
     title = _("a au moins un film")
     parameter_name = "has_films"
 
@@ -21,12 +22,60 @@ class HasFilmsFilter(admin.SimpleListFilter):
             return qs.filter(film_count=0)
         return queryset
 
-# Register your models here.
+
+class AnneDeSortiFilter(admin.SimpleListFilter):
+    title = _("année de sortie")
+    parameter_name = "release_year"
+
+    def lookups(self, request, model_admin):
+        # récupère toutes les années distinctes présentes en base
+        years = (
+            Film.objects.annotate(year=ExtractYear("date_sortie"))
+            .values_list("year", flat=True)
+            .distinct()
+            .order_by("-year")
+        )
+        return [(year, str(year)) for year in years if year is not None]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(date_sortie__year=self.value())
+        return queryset
+
+class EvaluationFilter(admin.SimpleListFilter):
+    title = _("évaluation")
+    parameter_name = "eval_cat"
+
+    def lookups(self, request, model_admin):
+        return [
+            ('excellent', "Excellent"),
+            ('bon', "Bon"),
+            ('moyen', "Moyen"),
+            ('mauvais', "Mauvais"),
+            ('sans_note', "Sans note"),
+        ]
+
+    def queryset(self, request, queryset):
+        v = self.value()
+        if not v:
+            return queryset
+        qs = queryset.annotate(_avg=Avg('notations__note'))
+        if v == 'sans_note':
+            return qs.filter(_avg__isnull=True)
+        if v == 'excellent':
+            return qs.filter(_avg__gte=4.5)
+        if v == 'bon':
+            return qs.filter(_avg__gte=3.5, _avg__lt=4.5)
+        if v == 'moyen':
+            return qs.filter(_avg__gte=2.5, _avg__lt=3.5)
+        if v == 'mauvais':
+            return qs.filter(_avg__lt=2.5)
+        return qs
 
 @admin.register(AuteurProfile)
 class AuteurProfileAdmin(admin.ModelAdmin):
     list_display = ('display_name', 'date_naissance', 'source', 'films_count')
-    list_filter = ('source', HasFilmsFilter)
+    list_filter = ('source', AvoirFilmsFilter)
     search_fields = (
         'user__username', 'user__first_name', 'user__last_name', 'user__email',
         'nom','email'
@@ -77,9 +126,28 @@ class AuteurProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Film)
 class FilmAdmin(admin.ModelAdmin):
-    list_display = ('titre', 'date_sortie', 'evaluation', 'statut', 'source',)
-    list_filter = ( 'statut', 'source')
+    list_display = ('titre', 'date_sortie', 'evaluation', 'statut', 'source', 'avg_note', 'auteurs_list')
+    list_filter = (AnneDeSortiFilter, EvaluationFilter, 'statut', 'source')
     search_fields = ('titre', 'description', 'auteurs__user__username', 'auteurs__user__first_name', 'auteurs__user__last_name')
     # Edition des auteurs directement dans la fiche du film
     filter_horizontal = ('auteurs',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(_avg_note=Avg('notations__note'))
+
+    @admin.display(ordering='_avg_note', description="Note moyenne")
+    def avg_note(self, obj):
+        return round(obj._avg_note, 2) if obj._avg_note is not None else "-"
+
+    @admin.display(description="Auteurs")
+    def auteurs_list(self, obj):
+        names = []
+        for a in obj.auteurs.all():
+            if a.user:
+                names.append(a.user.get_full_name() or a.user.username)
+            else:
+                names.append("(import TMDb)")
+        return ", ".join(names) if names else "-"
+
 
