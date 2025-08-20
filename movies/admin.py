@@ -27,7 +27,6 @@ class AnneDeSortiFilter(admin.SimpleListFilter):
     parameter_name = "release_year"
 
     def lookups(self, request, model_admin):
-        # récupère toutes les années distinctes présentes en base
         years = (
             Film.objects.annotate(year=ExtractYear("date_sortie"))
             .values_list("year", flat=True)
@@ -91,6 +90,15 @@ class NotationFilmInline(admin.TabularInline):
     autocomplete_fields = ['spectateur', 'film']
     show_change_link = True
 
+class FavoriFilmInline(admin.TabularInline):
+    model = SpectateurProfile.favoris_films.through
+    extra = 0
+    autocomplete_fields = ['film']
+
+class FavoriAuteurInline(admin.TabularInline):
+    model = SpectateurProfile.favoris_auteurs.through
+    extra = 0
+    autocomplete_fields = ['auteurprofile']
 
 @admin.register(AuteurProfile)
 class AuteurProfileAdmin(admin.ModelAdmin):
@@ -179,6 +187,7 @@ class SpectateurProfileAdmin(admin.ModelAdmin):
                      'favoris_films__titre', 'favoris_auteurs__user__username')
 
     autocomplete_fields = ['user']
+    inlines = [FavoriFilmInline, FavoriAuteurInline]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
