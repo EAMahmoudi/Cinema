@@ -3,6 +3,9 @@ from django.db.models import Count,Avg
 from django.utils.translation import gettext_lazy as _
 from django.db.models.functions import ExtractYear
 
+from django.utils.html import format_html, format_html_join
+from django.urls import reverse
+
 from .models import (
      AuteurProfile,Film,SpectateurProfile,NotationFilm,NotationAuteur
 )
@@ -102,7 +105,7 @@ class FavoriAuteurInline(admin.TabularInline):
 
 @admin.register(AuteurProfile)
 class AuteurProfileAdmin(admin.ModelAdmin):
-    list_display = ('display_name', 'date_naissance', 'source', 'films_count')
+    list_display = ('display_name', 'date_naissance', 'source', 'films_count',)
     list_filter = ('source', AvoirFilmsFilter)
     search_fields = (
         'user__username', 'user__first_name', 'user__last_name', 'user__email',
@@ -110,6 +113,12 @@ class AuteurProfileAdmin(admin.ModelAdmin):
     )
 
     autocomplete_fields = ['user']
+
+    readonly_fields = ('films_list_display',)
+    fieldsets = (
+        (None, {'fields': ('user', 'date_naissance', 'source')}),
+        ("Films associes", {'fields': ('films_list_display',)}),
+    )
     inlines = [FilmAuteurInline, NotationAuteurInline]
 
     def get_queryset(self, request):
@@ -136,6 +145,14 @@ class AuteurProfileAdmin(admin.ModelAdmin):
             return
         return super().delete_model(request, obj)
 
+    @admin.display(description="Films :")
+    def films_list_display(self, obj):
+        films = list(obj.films.values_list('titre', flat=True))
+        if not films:
+            return "Aucun film "
+        return format_html('<ul style="margin-left:1em;">{}</ul>',
+                           format_html_join("", "<li>{}</li>", ((f,) for f in films)))
+
     def delete_queryset(self, request, queryset):
         blocked = queryset.filter(films__isnull=False).distinct()
         if blocked.exists():
@@ -161,6 +178,11 @@ class FilmAdmin(admin.ModelAdmin):
     # Edition des auteurs directement dans la fiche du film
     filter_horizontal = ('auteurs',)
     inlines = [NotationFilmInline]
+    readonly_fields = ('auteurs_list_display', 'notations_list_display')
+    fieldsets = (
+        (None, {'fields': ('titre', 'description', 'date_sortie', 'statut', 'source')}),
+        ("Aperçu", {'fields': ('auteurs_list_display', 'notations_list_display')}),
+    )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -180,14 +202,54 @@ class FilmAdmin(admin.ModelAdmin):
                 names.append("(import TMDb)")
         return ", ".join(names) if names else "-"
 
+    @admin.display(description="Auteurs associés (liste)")
+    def auteurs_list_display(self, obj):
+        names = [a.nom for a in obj.auteurs.all()]
+        if not names:
+            return "-"
+        return format_html(
+            '<ul style="margin-left:1em;">{}</ul>',
+            format_html_join("", "<li>{}</li>", ((n,) for n in names))
+        )
+
+    @admin.display(description="Notations (liste)")
+    def notations_list_display(self, obj):
+        qs = obj.notations.select_related('spectateur__user').all()
+        if not qs:
+            return "-"
+        lines = [f"{n.spectateur.user.get_username()}: {n.note}/5"
+                 + (f" — {n.commentaire}" if n.commentaire else "")
+                 for n in qs]
+        return format_html(
+            '<ul style="margin-left:1em;">{}</ul>',
+            format_html_join("", "<li>{}</li>", ((l,) for l in lines))
+        )
+
 @admin.register(SpectateurProfile)
 class SpectateurProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'favoris_films_count', 'favoris_auteurs_count')
+    list_display = (
+        'user',
+        'favoris_films_count',
+        'favoris_auteurs_count',
+        'favoris_films_names',
+        'favoris_films_display',
+        'favoris_auteurs_display',
+    )
+
     search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name',
                      'favoris_films__titre', 'favoris_auteurs__user__username')
 
     autocomplete_fields = ['user']
-    inlines = [FavoriFilmInline, FavoriAuteurInline]
+    filter_horizontal = ('favoris_films', 'favoris_auteurs')
+
+    # Affichage détaillé (sans lien)
+    readonly_fields = ('favoris_films_display', 'favoris_auteurs_display')
+    fieldsets = (
+        (None, {'fields': ('user', 'bio', 'avatar')}),
+        ("Favoris (édition)", {'fields': ('favoris_films', 'favoris_auteurs')}),
+        ("Favoris (aperçu sans lien)", {'fields': ('favoris_films_display', 'favoris_auteurs_display')}),
+    )
+
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -195,15 +257,40 @@ class SpectateurProfileAdmin(admin.ModelAdmin):
             _fav_films=Count('favoris_films', distinct=True),
             _fav_auteurs=Count('favoris_auteurs', distinct=True),
         )
+    @admin.display(description="Auteurs favoris")
+    def favoris_auteurs_count(self, obj):
+        return obj.favoris_auteurs.count()
 
     @admin.display(ordering='_fav_films', description="Films favoris")
     def favoris_films_count(self, obj):
         return obj._fav_films
 
-    @admin.display(ordering='_fav_auteurs', description="Auteurs favoris")
-    def favoris_auteurs_count(self, obj):
-        return obj._fav_auteurs
+    # --- Colonnes LISTE : noms/titres en texte simple, séparés par virgule
+    @admin.display(description="Films favoris (noms)")
+    def favoris_films_names(self, obj):
+        titles = list(obj.favoris_films.values_list("titre", flat=True))
+        return ", ".join(titles) if titles else "-"
 
+    @admin.display(description="Auteurs favoris")
+    def favoris_auteurs_names(self, obj):
+        names = [a.nom for a in obj.favoris_auteurs.all()]
+        return ", ".join(names) if names else "-"
+
+    @admin.display(description="Films favoris ")
+    def favoris_films_display(self, obj):
+        titles = list(obj.favoris_films.values_list("titre", flat=True))
+        if not titles:
+            return "-"
+        return format_html('<ul style="margin-left:1em;">{}</ul>',
+                           format_html_join("", "<li>{}</li>", ((t,) for t in titles)))
+
+    @admin.display(description="Auteurs favoris")
+    def favoris_auteurs_display(self, obj):
+        auteurs = list(obj.favoris_auteurs.values_list("nom", flat=True))
+        if not auteurs:
+            return "-"
+        return format_html('<ul style="margin-left:1em;">{}</ul>',
+                           format_html_join("", "<li>{}</li>", ((a,) for a in auteurs)))
 
 @admin.register(NotationFilm)
 class NotationFilmAdmin(admin.ModelAdmin):
