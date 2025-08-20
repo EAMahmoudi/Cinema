@@ -4,12 +4,13 @@ from rest_framework.permissions import AllowAny,IsAuthenticated,IsAdminUser
 from .paginations import SimplePagination
 from .models import AuteurProfile
 from .serializers import AuteurListSerializer, AuteurDetailSerializer,AuteurModifSerializer
+from rest_framework.exceptions import ValidationError
 
 class AuteurViewSet(ModelViewSet):
 
     queryset = AuteurProfile.objects.all()
     permission_classes = [AllowAny]
-    http_method_names = ["get", "head", "options", "put", "patch"]
+    http_method_names = ["get", "head", "options", "put", "patch","delete"]
     ordering_fields = ("id",)
     pagination_class = SimplePagination
 
@@ -20,7 +21,7 @@ class AuteurViewSet(ModelViewSet):
             permission_classes =  [AllowAny]
         elif self.action == 'retrieve':
             permission_classes = [IsAuthenticated]
-        elif self.action in ("update", "partial_update"):
+        else :
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
 
@@ -31,3 +32,8 @@ class AuteurViewSet(ModelViewSet):
             return  AuteurDetailSerializer
         elif self.action in ("update", "partial_update"):
             return  AuteurModifSerializer
+
+    def perform_destroy(self, instance):
+        if instance.films.exists():
+            raise ValidationError("Impossible de supprimer un auteur qui est associé à au moins un film.")
+        return super().perform_destroy(instance)
