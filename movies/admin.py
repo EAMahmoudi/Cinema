@@ -74,3 +74,12 @@ class AuteurProfileAdmin(admin.ModelAdmin):
         if 'delete_selected' in actions:
             del actions['delete_selected']
         return actions
+
+@admin.register(Film)
+class FilmAdmin(admin.ModelAdmin):
+    list_display = ('titre', 'date_sortie', 'evaluation', 'statut', 'source',)
+    list_filter = ( 'statut', 'source')
+    search_fields = ('titre', 'description', 'auteurs__user__username', 'auteurs__user__first_name', 'auteurs__user__last_name')
+    # Edition des auteurs directement dans la fiche du film
+    filter_horizontal = ('auteurs',)
+
