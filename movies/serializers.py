@@ -26,3 +26,9 @@ class AuteurDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuteurProfile
         fields = ("id", "username", "email", "nom", "date_naissance", "source", "films")
+
+class AuteurModifSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = AuteurProfile
+        fields = ("id", "nom",'email', "date_naissance", "source")
