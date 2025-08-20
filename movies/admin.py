@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.functions import ExtractYear
 
 from .models import (
-     AuteurProfile,Film,SpectateurProfile
+     AuteurProfile,Film,SpectateurProfile,NotationFilm,NotationAuteur
 )
 
 class AvoirFilmsFilter(admin.SimpleListFilter):
@@ -21,7 +21,6 @@ class AvoirFilmsFilter(admin.SimpleListFilter):
         if self.value() == 'no':
             return qs.filter(film_count=0)
         return queryset
-
 
 class AnneDeSortiFilter(admin.SimpleListFilter):
     title = _("année de sortie")
@@ -150,7 +149,6 @@ class FilmAdmin(admin.ModelAdmin):
                 names.append("(import TMDb)")
         return ", ".join(names) if names else "-"
 
-
 @admin.register(SpectateurProfile)
 class SpectateurProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'favoris_films_count', 'favoris_auteurs_count')
@@ -174,3 +172,17 @@ class SpectateurProfileAdmin(admin.ModelAdmin):
     def favoris_auteurs_count(self, obj):
         return obj._fav_auteurs
 
+
+@admin.register(NotationFilm)
+class NotationFilmAdmin(admin.ModelAdmin):
+    list_display = ('spectateur', 'film', 'note', 'commentaire')
+    list_filter = ('note',)
+    search_fields = ('spectateur__user__username', 'film__titre', 'commentaire')
+    autocomplete_fields = ['spectateur', 'film']
+
+@admin.register(NotationAuteur)
+class NotationAuteurAdmin(admin.ModelAdmin):
+    list_display = ('spectateur', 'auteur', 'note', 'commentaire')
+    list_filter = ('note',)
+    search_fields = ('spectateur__user__username', 'auteur__user__username', 'commentaire')
+    autocomplete_fields = ['spectateur', 'auteur']
