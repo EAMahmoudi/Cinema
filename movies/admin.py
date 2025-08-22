@@ -196,10 +196,7 @@ class FilmAdmin(admin.ModelAdmin):
     def auteurs_list(self, obj):
         names = []
         for a in obj.auteurs.all():
-            if a.user:
-                names.append(a.user.get_full_name() or a.user.username)
-            else:
-                names.append("(import TMDb)")
+            names.append(a.nom)
         return ", ".join(names) if names else "-"
 
     @admin.display(description="Auteurs associés (liste)")

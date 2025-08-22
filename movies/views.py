@@ -12,6 +12,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
+from rest_framework import mixins, viewsets
+from rest_framework.permissions import AllowAny
+from .serializers import SpectateurSignupSerializer
 
 class AuteurViewSet(ModelViewSet):
 
@@ -160,14 +163,11 @@ class SpectateurViewSet(ModelViewSet):
         ser.save(spectateur=sp)
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
-from rest_framework import mixins, viewsets
-from rest_framework.permissions import AllowAny
-from .serializers import SpectateurSignupSerializer
 
 class SpectateurSignupViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """
-    POST /api/auth/signup/  -> crée un utilisateur 'spectateur' + SpectateurProfile
+        POST /api/auth/signup/  -> crée un utilisateur 'spectateur' + SpectateurProfile
     """
     permission_classes = [AllowAny]
     serializer_class = SpectateurSignupSerializer
-    queryset = []  # non utilisé, requis par DRF
+    queryset = []
