@@ -16,8 +16,6 @@ class AuteurProfile(models.Model):
     date_naissance = models.DateField(blank=True, null=True)
     source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default="admin")
 
-    def __str__(self):
-        return self.nom
 
 class Film(models.Model):
     titre = models.CharField(max_length=255)

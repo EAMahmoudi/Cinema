@@ -116,7 +116,7 @@ class AuteurProfileAdmin(admin.ModelAdmin):
 
     readonly_fields = ('films_list_display',)
     fieldsets = (
-        (None, {'fields': ('user', 'date_naissance', 'source')}),
+        (None, {'fields': ('user','nom', 'date_naissance', 'source')}),
         ("Films associes", {'fields': ('films_list_display',)}),
     )
     inlines = [FilmAuteurInline, NotationAuteurInline]
